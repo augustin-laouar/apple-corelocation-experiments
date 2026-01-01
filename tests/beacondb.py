@@ -17,7 +17,6 @@ def random_bssid():
 
 
 def send_request():
-    """Envoie une requête BeaconDB et retourne (status_code, bssid, data)."""
     bssid = random_bssid()
     payload = {
         "wifiAccessPoints": [
@@ -46,18 +45,16 @@ def main():
     THREADS = 20
     CSV_FILE = "results.csv"
 
-    print(f"Lancement de {N} requêtes BeaconDB avec {THREADS} threads…")
+    print(f"{N} requests with {THREADS} threads")
 
     statuses = {}
     start = time.time()
     found = 0
 
-    # Prépare fichier CSV
     with open(CSV_FILE, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(["bssid", "lat", "lon", "accuracy"])
 
-        # Exécution multithread
         with ThreadPoolExecutor(max_workers=THREADS) as executor:
             futures = [executor.submit(send_request) for _ in range(N)]
 
@@ -65,7 +62,6 @@ def main():
                 status, bssid, data = future.result()
                 statuses[status] = statuses.get(status, 0) + 1
 
-                # Si BeaconDB a trouvé une position
                 if status == 200 and data is not None:
                     loc = data.get("location", {})
                     lat = loc.get("lat")
@@ -78,19 +74,12 @@ def main():
     duration = time.time() - start
 
     # Résumé
-    print(f"\nDurée totale : {duration:.3f} sec")
-    print("Codes HTTP reçus :")
+    print(f"\n Duration : {duration:.3f} sec")
+    print("HTTP codes :")
     for status, count in statuses.items():
         print(f"  {status}: {count}")
 
-    print(f"\nBSSIDs trouvés : {found}")
-    print(f"Résultats enregistrés dans : {CSV_FILE}")
-
-    print("\nInterprétation :")
-    print(" - Si 429 apparaît → RATE LIMIT détecté")
-    print(" - Si uniquement 404 → pas de rate-limit visible")
-    print(" - network_error → BeaconDB saturé ou protection active")
-
+    print(f"\nBSSIDs found : {found}")
 
 if __name__ == "__main__":
     main()
